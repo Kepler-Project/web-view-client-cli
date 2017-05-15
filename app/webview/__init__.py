@@ -5,24 +5,22 @@ Kepler WebView client.
 """
 
 import json
+import os
 import requests
 from requests.auth import HTTPBasicAuth
+from webview.run import Run
 
 class WebView:
+    url = "https://localhost:9443/kepler"
 
     def __init__(self):
         
-        self._params = {}
-        self._url = 'https://localhost:9443/kepler'
-
         self._urls = {
-            'run' : "{}/runwf".format(self._url)
+            'run' : "runwf"
         }
 
-        self._username = 'none'
-        self._password = 'none'
-
-    def load_parameter_file(self, name):
+    def _load_parameter_file(self, name):
+        params = {}
         with open(name) as f:
             lines = f.readlines()
             for line in lines:
@@ -34,43 +32,53 @@ class WebView:
                     except(Exception):
                         raise Exception("Parameter file lines must be name = value, not: {}".format(line))
                         
-                    self.set_parameter(name.strip(), value.strip())
+                    params[name.strip()] = value.strip()
+        return params
 
-    def set_parameter(self, name, value):
-        self._params[name] = value
+    def start_run(self, url=url, workflow_name=None, workflow_file=None,
+        username=None, password=None, parameters=None, parameter_file=None):
 
-    def set_url(self, url):
-        self._url = url
-    
-    def set_workflow(self, name):
-        self._wfname = name
+        if url == None:
+            raise Exception("Must specify url to Kepler WebView.")
 
-    def start_run(self):
-        print("start run")
+        run_url = "{}/{}".format(url, self._urls['run'])
+        #print(run_url)
+        
+        if workflow_name == None and workflow_file == None:
+            raise Exception("Must specify either workflow name or workflow file name.")
+        elif workflow_name != None and workflow_file != None:
+            raise Exception("Cannot specify both workflow name and workflow file name.")
 
-        data = {
-            'wf_name': self._wfname
-        }
+        wf_data = {}
+        data = None
+        files = None
 
-        if self._params:
-            data['wf_params'] = self._params
+        if workflow_name != None:
+            wf_data['wf_name'] = workflow_name
+        else:
+            files = {'file': (os.path.basename(workflow_file), 
+                open(workflow_file, 'rb'), 'application/octet-stream')}
 
-        response = requests.post(self._urls['run'], data = json.dumps(data),
-            auth=HTTPBasicAuth(self._username, self._password),
+        if parameter_file:
+            params = _load_parameter_file(parameter_file)
+        else:
+            params = {}
+
+        if parameters:
+            params.update(parameters)
+
+        if len(params) > 0:
+            wf_data['wf_param'] = params
+
+        if wf_data:
+            if files:
+                files['json'] = (None, json.dumps(wf_data), 'application/json')
+            else:
+                data = json.dumps(wf_data)
+
+        response = requests.post(run_url, data=data, files=files,
+            auth=HTTPBasicAuth(username, password),
             #FIXME verify
             verify=False)
 
-        #print(response.text)
-
-        response_json = response.json()
-
-        if response.status_code != requests.codes.ok:
-            if 'error' in response_json:
-                print("ERROR: {}".format(response_json['error']))
-            response.raise_for_status()
-        else:
-            print(response.json())
-
-    def url(self):
-        return self._url
-
+        return Run(url=url, response=response)

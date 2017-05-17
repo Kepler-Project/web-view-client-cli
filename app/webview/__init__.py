@@ -36,7 +36,8 @@ class WebView:
         return params
 
     def start_run(self, url=url, workflow_name=None, workflow_file=None,
-        username=None, password=None, parameters=None, parameter_file=None):
+        username=None, password=None, parameters=None, parameter_file=None,
+        provenance=True, synchronous=False):
 
         if url == None:
             raise Exception("Must specify url to Kepler WebView.")
@@ -70,15 +71,17 @@ class WebView:
         if len(params) > 0:
             wf_data['wf_param'] = params
 
-        if wf_data:
-            if files:
-                files['json'] = (None, json.dumps(wf_data), 'application/json')
-            else:
-                data = json.dumps(wf_data)
+        wf_data['prov'] = provenance
+        wf_data['sync'] = synchronous
+
+        if files:
+            files['json'] = (None, json.dumps(wf_data), 'application/json')
+        else:
+            data = json.dumps(wf_data)
 
         response = requests.post(run_url, data=data, files=files,
             auth=HTTPBasicAuth(username, password),
             #FIXME verify
             verify=False)
 
-        return Run(url=url, response=response)
+        return Run(url=url, username=username, password=password, response=response)

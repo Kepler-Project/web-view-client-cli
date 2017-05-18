@@ -21,9 +21,10 @@ class Run:
         self._url = url
         self._username = username
 
-        #print(response.text)
-
         if response is not None:
+            
+            print("DEBUG: {}".format(response.text))
+
             if response.text == 'Unauthorized':
                 self._error = response.text
             else:
@@ -40,14 +41,14 @@ class Run:
     
                     if 'responses' in self._response_json:
                         self._is_running = False
-                    else:
-                        self._is_running = True
 
     # get error message if failure, otherwise None
     def error(self):
-        if self._is_running is None:
-            status(self);
-
+        # see if error already set or no longer running
+        if self._error is not None or self._is_running is False:
+            return self._error
+        
+        self.status();
         return self._error
 
     # wait until run finished
@@ -64,7 +65,7 @@ class Run:
         if self._is_running is False:
             return False
         else:
-            status(self)
+            self.status()
             return self._is_running
 
     # get the run status
@@ -77,14 +78,17 @@ class Run:
         if response.text == 'Unauthorized':
             raise Exception(response.text)
 
-        if response.status_code != requests.codes.ok:
-            self._error = response.json()['error']
-            raise Exception(self._error)
-       
         self._status = response.json()
-        self._is_running = self._status['status'] == 'running'
+
+        # error handling first
         if 'error' in self._status:
             self._error = self._status['error']
+
+        if response.status_code != requests.codes.ok:
+            return
+            #raise Exception(self._error)
+      
+        self._is_running = self._status['status'] == 'running'
 
         return self._status
 

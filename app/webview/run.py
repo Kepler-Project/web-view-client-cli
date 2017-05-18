@@ -45,6 +45,9 @@ class Run:
 
     # get error message if failure, otherwise None
     def error(self):
+        if self._is_running is None:
+            status(self);
+
         return self._error
 
     # wait until run finished
@@ -61,23 +64,30 @@ class Run:
         if self._is_running is False:
             return False
         else:
-            response = requests.get("{}/runs/{}".format(self._url, self._run_id),
-                auth=HTTPBasicAuth(self._username, self._password),
-                #FIXME verify
-                verify=False)
-        
-            if response.text == 'Unauthorized':
-                raise Exception(response.text)
-
-            json = response.json()
-            #print(json)
-
-            if response.status_code != requests.codes.ok:
-                self._error = json['error']
-                raise Exception(self._error)
-
-            self._is_running = json['status'] == 'running'
+            status(self)
             return self._is_running
+
+    # get the run status
+    def status(self):
+        response = requests.get("{}/runs/{}".format(self._url, self._run_id),
+            auth=HTTPBasicAuth(self._username, self._password),
+            #FIXME verify
+            verify=False)
+        
+        if response.text == 'Unauthorized':
+            raise Exception(response.text)
+
+        if response.status_code != requests.codes.ok:
+            self._error = response.json()['error']
+            raise Exception(self._error)
+       
+        self._status = response.json()
+        self._is_running = self._status['status'] == 'running'
+        if 'error' in self._status:
+            self._error = self._status['error']
+
+        return self._status
+
 
     # get the output
     def outputs(self):

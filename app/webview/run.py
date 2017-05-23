@@ -15,7 +15,7 @@ class Run:
         self._error = None
         self._is_running = None
         self._password = password
-        self._response_json = None
+        self._outputs = None
         self._run_id = id
         self._success = False
         self._url = url
@@ -28,19 +28,20 @@ class Run:
             if response.text == 'Unauthorized':
                 self._error = response.text
             else:
-                self._response_json = response.json()
+                response_json = response.json()
     
                 if response.status_code != requests.codes.ok:
-                    if 'error' in self._response_json:
-                        self._error = self._response_json['error']
+                    if 'error' in response_json:
+                        self._error = response_json['error']
                 else:
                     self._success = True
     
-                    if 'runid' in self._response_json:
-                        self._run_id = self._response_json['runid']
+                    if 'runid' in response_json:
+                        self._run_id = response_json['runid']
     
-                    if 'responses' in self._response_json:
+                    if 'responses' in response_json:
                         self._is_running = False
+                        self._outputs = response_json['responses']
 
     # get error message if failure, otherwise None
     def error(self):
@@ -69,9 +70,9 @@ class Run:
             return self._is_running
 
     # get the run status
-    def status(self):
-        response = requests.get("{}/runs/{}".format(self._url, self._run_id),
-            auth=HTTPBasicAuth(self._username, self._password),
+    def status(self, outputs=False):
+        response = requests.get("{}/runs/{}?outputs={}".format(self._url, 
+            self._run_id, str(outputs).lower()), auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
         
@@ -89,15 +90,19 @@ class Run:
             #raise Exception(self._error)
       
         self._is_running = self._status['status'] == 'running'
+                    
+        if 'responses' in self._status:
+           self._outputs = self._status['responses']
 
         return self._status
 
 
     # get the output
     def outputs(self):
-        if self._response_json and 'responses' in self._response_json:
-            return self._response_json['responses']
-        return None
+        if self._outputs is not None:
+            return self._outputs
+        self.status(outputs=True)
+        return self._outputs
 
     # TODO
     def output(self, name):

@@ -13,12 +13,6 @@ from webview.run import Run
 class WebView:
     url = "https://localhost:9443/kepler"
 
-    def __init__(self):
-        
-        self._urls = {
-            'run' : "runwf"
-        }
-
     def _load_parameter_file(self, name):
         params = {}
         with open(name) as f:
@@ -35,6 +29,37 @@ class WebView:
                     params[name.strip()] = value.strip()
         return params
 
+    # get the runs. returns a list of Run objects.
+    def runs(self, url=url, username=None, password=None):
+        if url == None:
+            raise Exception("Must specify url to Kepler WebView.")
+
+        runs_url = "{}/runs".format(url)
+        
+        response = requests.get(runs_url, auth=HTTPBasicAuth(username, password),
+            #FIXME verify
+            verify=False)
+
+        if response.text == 'Unauthorized':
+            raise Exception("Wrong username or password.")
+        else:
+            response_json = response.json()
+    
+            if 'error' in response_json:
+                raise Exception(response_json['error'])
+
+            if 'runs' not in response_json:
+                raise Exception("Unexpeted response: {}".format(json.dumps(response_json)))
+
+            runs = []
+            for fields in response_json['runs']:
+                runs.append(Run(url=url,username=username,password=password,fields=fields))
+
+        return runs
+
+        #return Run(url=url, username=username, password=password, response=response)
+
+    # start a workflow execution run.
     def start_run(self, url=url, workflow_name=None, workflow_file=None,
         username=None, password=None, parameters=None, parameter_file=None,
         provenance=True, synchronous=False):
@@ -42,8 +67,7 @@ class WebView:
         if url == None:
             raise Exception("Must specify url to Kepler WebView.")
 
-        run_url = "{}/{}".format(url, self._urls['run'])
-        #print(run_url)
+        run_url = "{}/runwf".format(url)
         
         if workflow_name == None and workflow_file == None:
             raise Exception("Must specify either workflow name or workflow file name.")

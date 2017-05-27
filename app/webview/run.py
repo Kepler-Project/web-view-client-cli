@@ -22,7 +22,7 @@ class Run:
 
         if fields is not None:
             self._fields = fields
-            print(fields)
+            #print(fields)
         else:
             self._fields = {}
 
@@ -31,7 +31,7 @@ class Run:
 
         if response is not None:
             
-            print("DEBUG: {}".format(response.text))
+            #print("DEBUG: {}".format(response.text))
 
             if response.text == 'Unauthorized':
                 self._fields['error'] = response.text
@@ -93,23 +93,26 @@ class Run:
         if response.text == 'Unauthorized':
             raise Exception(response.text)
 
-        self._status = response.json()
-
-        # error handling first
-        if 'error' in self._status:
-            self._fields['error'] = self._status['error']
+        response_json = response.json()
+        for k,v in response_json.items():
+            if k == 'responses':
+                self._outputs = v
+            else:
+                self._fields[k] = v
 
         if response.status_code != requests.codes.ok:
             return
             #raise Exception(self._fields['error'])
       
-        self._is_running = self._status['status'] == 'running'
+        self._is_running = self._fields['status'] == 'running'
                     
-        if 'responses' in self._status:
-           self._outputs = self._status['responses']
-
-        return self._status
-
+        return response_json
+   
+    # get the start time of the workflow run.
+    def start(self):
+        if 'start' not in self._fields:
+            self.status()
+        return self._fields['start']
 
     # get the output
     def outputs(self):
@@ -126,3 +129,9 @@ class Run:
     # get the provenance trace of the run
     def provenance(self, format='json'):
         pass
+
+    # get the run type, e.g., complete, running, error
+    def type(self):
+        if 'status' not in self._fields:
+            self.status()
+        return self._fields['status']

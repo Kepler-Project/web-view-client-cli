@@ -21,15 +21,29 @@ if __name__ == '__main__':
         help='Parameter file')
     parser.add_argument('-run', dest='run', action='store_true',
         help='Start a workflow execution.')
+    parser.add_argument('-runs', dest='runs', action='store_true',
+        help='List workflow runs.')
     parser.add_argument('-wfname', dest='workflow_name', help="Name of workflow (on server).")
     parser.add_argument('-wf', dest='workflow_file', help="Workflow file.")
 
     args = parser.parse_known_args()
 
-    if not args[0].run:
-        raise Exception("Must specify at least one command: -run")
+    if not args[0].run and not args[0].runs:
+        raise Exception("Must specify at least one command: -run or -runs")
+    elif args[0].run and args[0].runs:
+        raise Exception("Cannot specify both -run or -runs.")
 
-    if args[0].run:
+    if args[0].runs:
+        runs = client.runs() 
+        
+        if len(runs) == 0:
+            print("No workflow runs.")
+        else:
+            print("{:^29} | {:^8} | {} ".format("Start", "Status", "ID"))
+            for run in runs:
+                print("{:^29} | {:^8} | {} ".format(run.start(), run.type(), run.id()))
+
+    elif args[0].run:
 
         if len(args[1]) % 2 != 0:
             raise Exception("Must specify name and value for each parameter.")
@@ -53,4 +67,3 @@ if __name__ == '__main__':
 
         print(run.error())
         print(run.outputs())
-

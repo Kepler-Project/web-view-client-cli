@@ -72,6 +72,10 @@ class Run:
 
     # get any keys_values for the run.
     def keys_values(self):
+
+        if 'id' not in self._fields:
+            raise Exception('Must specify run id.')
+
         response = requests.get("{}/runs/{}?keysValues=true".format(self._url, self._fields['id']),
             auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify

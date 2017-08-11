@@ -70,6 +70,23 @@ class Run:
     def finish(self):
         return self._success
 
+    # get any keys_values for the run.
+    def keys_values(self):
+        response = requests.get("{}/runs/{}?keysValues=true".format(self._url, self._fields['id']),
+            auth=HTTPBasicAuth(self._username, self._password),
+            #FIXME verify
+            verify=False)
+        
+        if response.text == 'Unauthorized':
+            raise Exception(response.text)
+
+        response_json = response.json()
+
+        if 'keysValues' not in response_json:
+            raise Exception('Missing keysValues in response')
+
+        return response_json['keysValues']
+
     # get the run id. returns None if provenance not enabled.
     def id(self):
         return self._fields['id']

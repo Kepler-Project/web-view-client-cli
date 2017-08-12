@@ -86,6 +86,9 @@ class Run:
 
         response_json = response.json()
 
+        if 'error' in response_json:
+            raise Exception(response_json['error'])
+
         if 'keysValues' not in response_json:
             raise Exception('Missing keysValues in response')
 
@@ -146,10 +149,33 @@ class Run:
     def output(self, name):
         pass
 
-    # TODO
-    # get the provenance trace of the run
-    def provenance(self, format='json'):
-        pass
+    # get the PROV trace of the run
+    def prov(self, prov_format='json'):
+        
+        if 'id' not in self._fields:
+            raise Exception('Must specify run id.')
+
+        response = requests.get("{}/runs/{}?prov=true&provFormat={}".format(self._url,
+            self._fields['id'], prov_format),
+            auth=HTTPBasicAuth(self._username, self._password),
+            #FIXME verify
+            verify=False)
+       
+        if response.text == 'Unauthorized':
+            raise Exception(response.text)
+
+        response_json = response.json()
+                    
+        if 'error' in response_json:
+            raise Exception(response_json['error'])
+
+        if 'prov' not in response_json:
+            raise Exception('Missing prov in response')
+
+        if prov_format == 'json':
+            return json.loads(response_json['prov'])
+
+        return response_json['prov']
 
     # get the run type, e.g., complete, running, error
     def type(self):

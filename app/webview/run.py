@@ -73,21 +73,8 @@ class Run:
     # get any keys_values for the run.
     def keys_values(self):
 
-        if 'id' not in self._fields:
-            raise Exception('Must specify run id.')
-
-        response = requests.get("{}/runs/{}?keysValues=true".format(self._url, self._fields['id']),
-            auth=HTTPBasicAuth(self._username, self._password),
-            #FIXME verify
-            verify=False)
-        
-        if response.text == 'Unauthorized':
-            raise Exception(response.text)
-
-        response_json = response.json()
-
-        if 'error' in response_json:
-            raise Exception(response_json['error'])
+        response_json = self._make_request("{}/runs/{}?keysValues=true"
+            .format(self._url, self._fields['id']))
 
         if 'keysValues' not in response_json:
             raise Exception('Missing keysValues in response')
@@ -108,16 +95,10 @@ class Run:
 
     # get the run status
     def status(self, outputs=False):
-        response = requests.get("{}/runs/{}?outputs={}".format(self._url, 
-            self._fields['id'], str(outputs).lower()), 
-            auth=HTTPBasicAuth(self._username, self._password),
-            #FIXME verify
-            verify=False)
         
-        if response.text == 'Unauthorized':
-            raise Exception(response.text)
+        response_json = self._make_request("{}/runs/{}?outputs={}"
+            .format(self._url, self._fields['id'], str(outputs).lower()))
 
-        response_json = response.json()
         for k,v in response_json.items():
             if k == 'responses':
                 self._outputs = v
@@ -132,12 +113,6 @@ class Run:
                     
         return response_json
    
-    # get the start time of the workflow run.
-    def start(self):
-        if 'start' not in self._fields:
-            self.status()
-        return self._fields['start']
-
     # get the output
     def outputs(self):
         if self._outputs is not None:
@@ -151,12 +126,40 @@ class Run:
 
     # get the PROV trace of the run
     def prov(self, prov_format='json'):
-        
+       
+        response_json = self._make_request("{}/runs/{}?prov=true&provFormat={}"
+            .format(self._url, self._fields['id'], prov_format))
+
+        if 'prov' not in response_json:
+            raise Exception('Missing prov in response')
+
+        if prov_format == 'json':
+            return json.loads(response_json['prov'])
+
+        return response_json['prov']
+
+    def prov_graph(self):
+        pass
+
+    # get the start time of the workflow run.
+    def start_time(self):
+        if 'start' not in self._fields:
+            self.status()
+        return self._fields['start']
+
+    # get the run type, e.g., complete, running, error
+    def type(self):
+        if 'status' not in self._fields:
+            self.status()
+        return self._fields['status']
+
+    # make a request and check response for errors
+    def _make_request(self, url):
+
         if 'id' not in self._fields:
             raise Exception('Must specify run id.')
 
-        response = requests.get("{}/runs/{}?prov=true&provFormat={}".format(self._url,
-            self._fields['id'], prov_format),
+        response = requests.get(url,
             auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
@@ -169,16 +172,4 @@ class Run:
         if 'error' in response_json:
             raise Exception(response_json['error'])
 
-        if 'prov' not in response_json:
-            raise Exception('Missing prov in response')
-
-        if prov_format == 'json':
-            return json.loads(response_json['prov'])
-
-        return response_json['prov']
-
-    # get the run type, e.g., complete, running, error
-    def type(self):
-        if 'status' not in self._fields:
-            self.status()
-        return self._fields['status']
+        return response_json

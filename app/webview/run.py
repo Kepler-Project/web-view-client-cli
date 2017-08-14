@@ -138,9 +138,6 @@ class Run:
 
         return response_json['prov']
 
-    def prov_graph(self):
-        pass
-
     # get the start time of the workflow run.
     def start_time(self):
         if 'start' not in self._fields:
@@ -153,6 +150,11 @@ class Run:
             self.status()
         return self._fields['status']
 
+    def workflow(self):
+        xml = self._make_request(
+            "{}/runs/{}/workflow".format(self._url, self._fields['id']))
+        return xml
+
     # make a request and check response for errors
     def _make_request(self, url):
 
@@ -163,13 +165,16 @@ class Run:
             auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
-       
+      
         if response.text == 'Unauthorized':
             raise Exception(response.text)
 
-        response_json = response.json()
+        if 'Content-Type' in response.headers and response.headers['Content-Type'] == 'application/json':
+            response_json = response.json()
                     
-        if 'error' in response_json:
-            raise Exception(response_json['error'])
+            if 'error' in response_json:
+                raise Exception(response_json['error'])
 
-        return response_json
+            return response_json
+        else:
+            return response.text

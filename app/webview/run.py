@@ -138,6 +138,11 @@ class Run:
 
         return response_json['prov']
 
+    # get the workflow screenshot and save to a file.
+    def screenshot(self, file_name='workflow.png'):
+        return self._make_request_to_binary_file(
+            "{}/runs/{}/screenshot".format(self._url, self._fields['id']), file_name)
+
     # get the start time of the workflow run.
     def start_time(self):
         if 'start' not in self._fields:
@@ -150,18 +155,10 @@ class Run:
             self.status()
         return self._fields['status']
 
-    def workflow(self, file_name):
-
-        if file_name is None:
-            raise Exception('Must specify destination file name for workflow.')
-
-        data = self._make_request(
-            "{}/runs/{}/workflow".format(self._url, self._fields['id']))
-        
-        with open(file_name, 'wb') as f:
-            f.write(data)
-
-        print('Wrote workflow to {}'.format(file_name))
+    # get the workflow kar and save to a file.
+    def workflow(self, file_name='workflow.kar'):
+        return self._make_request_to_binary_file(
+            "{}/runs/{}/workflow".format(self._url, self._fields['id']), file_name)
 
     # make a request and check response for errors
     def _make_request(self, url):
@@ -187,3 +184,17 @@ class Run:
                 return response.text
        
         return response.content
+    
+    # make a request that returns a binary file and write file to file_name
+    def _make_request_to_binary_file(self, url, file_name):
+
+        if file_name is None:
+            raise Exception('Must specify destination file name.')
+
+        data = self._make_request(url)
+        
+        with open(file_name, 'wb') as f:
+            f.write(data)
+
+        return file_name
+

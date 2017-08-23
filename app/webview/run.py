@@ -150,10 +150,18 @@ class Run:
             self.status()
         return self._fields['status']
 
-    def workflow(self):
-        xml = self._make_request(
+    def workflow(self, file_name):
+
+        if file_name is None:
+            raise Exception('Must specify destination file name for workflow.')
+
+        data = self._make_request(
             "{}/runs/{}/workflow".format(self._url, self._fields['id']))
-        return xml
+        
+        with open(file_name, 'wb') as f:
+            f.write(data)
+
+        print('Wrote workflow to {}'.format(file_name))
 
     # make a request and check response for errors
     def _make_request(self, url):
@@ -169,12 +177,13 @@ class Run:
         if response.text == 'Unauthorized':
             raise Exception(response.text)
 
-        if 'Content-Type' in response.headers and response.headers['Content-Type'] == 'application/json':
-            response_json = response.json()
-                    
-            if 'error' in response_json:
-                raise Exception(response_json['error'])
-
-            return response_json
-        else:
-            return response.text
+        if 'Content-Type' in response.headers:
+            if response.headers['Content-Type'] == 'application/json':
+                response_json = response.json()
+                if 'error' in response_json:
+                    raise Exception(response_json['error'])
+                return response_json
+            elif response.headers['Content-Type'] == 'application/xml':
+                return response.text
+       
+        return response.content

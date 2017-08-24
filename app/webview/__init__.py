@@ -9,6 +9,7 @@ import os
 import requests
 from requests.auth import HTTPBasicAuth
 from webview.run import Run
+from webview.runs import Runs
 
 class WebView:
     url = "https://localhost:9443/kepler"
@@ -55,7 +56,7 @@ class WebView:
             for fields in response_json['runs']:
                 runs.append(Run(url=url,username=username,password=password,fields=fields))
 
-        return runs
+        return Runs(runs)
 
         #return Run(url=url, username=username, password=password, response=response)
 

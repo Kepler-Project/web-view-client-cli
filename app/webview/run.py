@@ -121,8 +121,8 @@ class Run:
         return self._outputs
 
     # TODO
-    def output(self, name):
-        pass
+    #def output(self, name):
+    #    pass
 
     # get the PROV trace of the run
     def prov(self, prov_format='json'):
@@ -145,20 +145,33 @@ class Run:
 
     # get the start time of the workflow run.
     def start_time(self):
-        if 'start' not in self._fields:
-            self.status()
-        return self._fields['start']
+        return self._get_field_in_status('start')
 
     # get the run type, e.g., complete, running, error
     def type(self):
-        if 'status' not in self._fields:
-            self.status()
-        return self._fields['status']
+        return self._get_field_in_status('status')
 
     # get the workflow kar and save to a file.
     def workflow(self, file_name='workflow.kar'):
         return self._make_request_to_binary_file(
             "{}/runs/{}/workflow".format(self._url, self._fields['id']), file_name)
+
+    # get the workflow name
+    def workflow_name(self):
+        return self._get_field_in_status('workflow_name')
+
+    ### private methods
+
+    # get a field in the status dictionary
+    def _get_field_in_status(self, field_name):
+        if field_name not in self._fields:
+            self.status()
+    
+        if field_name not in self._fields:
+            raise Exception('No such field: ' + field_name)
+
+        return self._fields[field_name]
+
 
     # make a request and check response for errors
     def _make_request(self, url):

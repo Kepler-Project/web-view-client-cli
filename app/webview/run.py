@@ -106,8 +106,13 @@ class Run:
     #    pass
 
     # get the PROV trace of the run
-    def prov(self, prov_format='json'):
-       
+    def prov(self, file_name=None, prov_format='json'):
+     
+        if file_name:
+            return self._make_request_to_binary_file(
+                "{}/runs/{}/prov?provFormat={}".format(self._url, self._fields['id'], prov_format),
+                file_name)
+
         response_json = self._make_request("{}/runs/{}?prov=true&provFormat={}"
             .format(self._url, self._fields['id'], prov_format))
 

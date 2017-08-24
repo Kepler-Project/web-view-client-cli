@@ -13,7 +13,6 @@ class Run:
     def __init__(self, url='https://localhost:9443/kepler', username=None, 
         password=None, response=None, id=None, fields=None):
 
-        self._is_running = None
         self._outputs = None
         self._password = password
         self._success = False
@@ -34,13 +33,13 @@ class Run:
             #print("DEBUG: {}".format(response.text))
 
             if response.text == 'Unauthorized':
-                self._fields['error'] = response.text
+                raise Exception('Wrong username or password.')
             else:
                 response_json = response.json()
     
                 if response.status_code != requests.codes.ok:
                     if 'error' in response_json:
-                        self._fields['error'] = response_json['error']
+                        raise Exception(response_json['error'])
                 else:
                     self._success = True
     
@@ -48,7 +47,6 @@ class Run:
                         self._fields['id'] = response_json['id']
     
                     if 'responses' in response_json:
-                        self._is_running = False
                         self._outputs = response_json['responses']
 
     def __str__(self):
@@ -56,14 +54,7 @@ class Run:
 
     # get error message if failure, otherwise None
     def error(self):
-        # see if error already set or no longer running
-        if 'error' not in self._fields and self._is_running is True:
-            self.status()
-
-        if 'error' in self._fields:
-            return self._fields['error']
-        else:
-            return None
+        return self._get_field_in_status('runError', optional=True)
 
     # wait until run finished
     # returns True if success, False otherwise
@@ -87,11 +78,7 @@ class Run:
     
     # get if the run is still running.
     def is_running(self):
-        if self._is_running is False:
-            return False
-        else:
-            self.status()
-            return self._is_running
+        return self._get_field_in_status('status') == 'running'
 
     # get the run status
     def status(self, outputs=False):
@@ -105,12 +92,6 @@ class Run:
             else:
                 self._fields[k] = v
 
-        if response.status_code != requests.codes.ok:
-            return
-            #raise Exception(self._fields['error'])
-      
-        self._is_running = self._fields['status'] == 'running'
-                    
         return response_json
    
     # get the output
@@ -158,20 +139,21 @@ class Run:
 
     # get the workflow name
     def workflow_name(self):
-        return self._get_field_in_status('workflow_name')
+        return self._get_field_in_status('workflowName')
 
     ### private methods
 
     # get a field in the status dictionary
-    def _get_field_in_status(self, field_name):
+    def _get_field_in_status(self, field_name, optional=False):
         if field_name not in self._fields:
             self.status()
     
         if field_name not in self._fields:
+            if optional:
+                return None
             raise Exception('No such field: ' + field_name)
 
         return self._fields[field_name]
-
 
     # make a request and check response for errors
     def _make_request(self, url):
@@ -210,4 +192,3 @@ class Run:
             f.write(data)
 
         return file_name
-

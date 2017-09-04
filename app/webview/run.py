@@ -124,6 +124,10 @@ class Run:
 
         return response_json['prov']
 
+    # get an research object bundle
+    def ro_bundle(self, file_name="ro_bundle.zip"):
+        return self._make_request_to_binary_file("{}/runs/{}/roBundle".format(self._url, self._fields['id']), file_name)
+
     # get the workflow screenshot and save to a file.
     def screenshot(self, file_name='workflow.png'):
         return self._make_request_to_binary_file(

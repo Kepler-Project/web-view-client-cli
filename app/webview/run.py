@@ -11,13 +11,14 @@ from requests.auth import HTTPBasicAuth
 class Run:
 
     def __init__(self, url='https://localhost:9443/kepler', username=None, 
-        password=None, response=None, id=None, fields=None):
+        password=None, response=None, id=None, fields=None, debug=False):
 
         self._outputs = None
         self._password = password
         self._success = False
         self._url = url
         self._username = username
+        self._debug = debug
 
         if fields is not None:
             self._fields = fields
@@ -32,11 +33,14 @@ class Run:
             
             #print("DEBUG: {}".format(response.text))
 
+            if self._debug:
+                print("DEBUG: response: {}".format(response.text))
+    
             if response.text == 'Unauthorized':
                 raise Exception('Wrong username or password.')
             else:
                 response_json = response.json()
-    
+
                 if response.status_code != requests.codes.ok:
                     if 'error' in response_json:
                         raise Exception(response_json['error'])
@@ -175,6 +179,9 @@ class Run:
             #FIXME verify
             verify=False)
       
+        if self._debug:
+            print("DEBUG: response: {}".format(response.text))
+    
         if response.text == 'Unauthorized':
             raise Exception(response.text)
 

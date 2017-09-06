@@ -14,6 +14,10 @@ from webview.runs import Runs
 class WebView:
     url = "https://localhost:9443/kepler"
 
+    def __init__(self, debug=False):
+
+        self._debug = debug
+
     def _load_parameter_file(self, name):
         params = {}
         with open(name) as f:
@@ -41,6 +45,9 @@ class WebView:
             #FIXME verify
             verify=False)
 
+        if self._debug:
+            print("DEBUG: response: {}".format(response.text))
+    
         if response.text == 'Unauthorized':
             raise Exception("Wrong username or password.")
         else:
@@ -54,7 +61,7 @@ class WebView:
 
             runs = []
             for fields in response_json['runs']:
-                runs.append(Run(url=url,username=username,password=password,fields=fields))
+                runs.append(Run(url=url,username=username,password=password,fields=fields,debug=self._debug))
 
         return Runs(runs)
 
@@ -109,4 +116,4 @@ class WebView:
             #FIXME verify
             verify=False)
 
-        return Run(url=url, username=username, password=password, response=response)
+        return Run(url=url, username=username, password=password, response=response, debug=self._debug)

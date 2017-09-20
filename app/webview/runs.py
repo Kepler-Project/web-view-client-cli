@@ -8,9 +8,6 @@ class Runs:
 
     def __init__(self, runs):
 
-        if len(runs) == 0:
-            raise Exception('Must specify at least one run.')
-
         self._runs = runs
 
     # get the latest run (based on start time) for a workflow
@@ -36,3 +33,9 @@ class Runs:
         for run in self._runs:
             names.add(run.workflow_name())
         return names
+
+    def parameters(self):
+        p = []
+        for run in self._runs:
+            p.append({'name':run.workflow_name() , 'parameters':run.parameters()})
+        return p

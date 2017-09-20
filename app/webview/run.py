@@ -109,6 +109,22 @@ class Run:
     #def output(self, name):
     #    pass
 
+    # get any parameters values for the run.
+    def parameters(self, all=False):
+
+        response_json = self._make_request("{}/runs/{}?parametersValues=true"
+            .format(self._url, self._fields['id']))
+
+        if 'parametersValues' not in response_json:
+            raise Exception('Missing parametersValues in response')
+
+        kv = { };
+        for k,v in response_json['parametersValues'].items():
+            if all or k.count('.') == 1:
+                kv[k[1:]] = v
+
+        return kv
+
     # get the PROV trace of the run
     def prov(self, file_name=None, prov_format='json'):
      

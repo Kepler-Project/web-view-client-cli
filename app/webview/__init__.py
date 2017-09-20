@@ -12,12 +12,17 @@ from webview.run import Run
 from webview.runs import Runs
 
 class WebView:
-    url = "https://localhost:9443/kepler"
 
-    def __init__(self, debug=False):
+    def __init__(self, url='https://localhost:9443/kepler', username=None, password=None, debug=False):
 
+        if url is None:
+            raise Exception("Must specify url to Kepler WebView.")
+
+        self._url = url
+        self._username = username
+        self._password = password
         self._debug = debug
-
+        
     def _load_parameter_file(self, name):
         params = {}
         with open(name) as f:
@@ -35,13 +40,19 @@ class WebView:
         return params
 
     # get the runs. returns a list of Run objects.
-    def runs(self, url=url, username=None, password=None):
-        if url == None:
-            raise Exception("Must specify url to Kepler WebView.")
-
-        runs_url = "{}/runs".format(url)
+    def runs(self, name=None, parameters=None):
         
-        response = requests.get(runs_url, auth=HTTPBasicAuth(username, password),
+        runs_url = "{}/runs".format(self._url)
+
+        data = {}
+
+        if name is not None:
+            data['name'] = name
+
+        if parameters is not None:
+            data['parameters'] = parameters
+        
+        response = requests.post(runs_url, data=data, auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
 
@@ -61,21 +72,16 @@ class WebView:
 
             runs = []
             for fields in response_json['runs']:
-                runs.append(Run(url=url,username=username,password=password,fields=fields,debug=self._debug))
+                runs.append(Run(url=self._url,username=self._username,password=self._password,fields=fields,debug=self._debug))
 
         return Runs(runs)
 
-        #return Run(url=url, username=username, password=password, response=response)
-
     # start a workflow execution run.
-    def start_run(self, url=url, workflow_name=None, workflow_file=None,
-        username=None, password=None, parameters=None, parameter_file=None,
-        provenance=True, synchronous=False):
+    def start_run(self, workflow_name=None, workflow_file=None, 
+        parameters=None, parameter_file=None, provenance=True, 
+        synchronous=False):
 
-        if url == None:
-            raise Exception("Must specify url to Kepler WebView.")
-
-        run_url = "{}/runwf".format(url)
+        run_url = "{}/runwf".format(self._url)
         
         if workflow_name == None and workflow_file == None:
             raise Exception("Must specify either workflow name or workflow file name.")
@@ -112,8 +118,8 @@ class WebView:
             data = json.dumps(wf_data)
 
         response = requests.post(run_url, data=data, files=files,
-            auth=HTTPBasicAuth(username, password),
+            auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
 
-        return Run(url=url, username=username, password=password, response=response, debug=self._debug)
+        return Run(url=self._url, username=self._username, password=self._password, response=response, debug=self._debug)

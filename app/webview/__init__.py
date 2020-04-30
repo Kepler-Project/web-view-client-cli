@@ -79,7 +79,7 @@ class WebView:
     # start a workflow execution run.
     def start_run(self, workflow_name=None, workflow_file=None, 
         parameters=None, parameter_file=None, provenance=True, 
-        synchronous=False):
+        synchronous=False, webhook=None, reqId=None):
 
         run_url = "{}/runwf".format(self._url)
         
@@ -112,6 +112,12 @@ class WebView:
         wf_data['prov'] = provenance
         wf_data['sync'] = synchronous
 
+        if webhook:
+            wf_data['webhook'] = webhook
+
+        if reqId:
+            wf_data['reqid'] = reqId
+
         if files:
             files['json'] = (None, json.dumps(wf_data), 'application/json')
         else:
@@ -121,5 +127,5 @@ class WebView:
             auth=HTTPBasicAuth(self._username, self._password),
             #FIXME verify
             verify=False)
-
+        
         return Run(url=self._url, username=self._username, password=self._password, response=response, debug=self._debug)

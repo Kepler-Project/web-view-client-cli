@@ -78,8 +78,8 @@ class WebView:
 
     # start a workflow execution run.
     def start_run(self, workflow_name=None, workflow_file=None, 
-        parameters=None, parameter_file=None, provenance=True, 
-        synchronous=False, webhook=None, reqId=None):
+        parameters=None, parameter_file=None, paramset=None,
+        provenance=True, synchronous=False, webhook=None, reqId=None):
 
         run_url = "{}/runwf".format(self._url)
         
@@ -108,6 +108,9 @@ class WebView:
 
         if len(params) > 0:
             wf_data['wf_param'] = params
+
+        if paramset and len(paramset) > 0:
+            wf_data['wf_paramset'] = paramset
 
         wf_data['prov'] = provenance
         wf_data['sync'] = synchronous
